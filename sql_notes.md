@@ -41,3 +41,59 @@ FROM
 
 # sql to json
 ``` SELECT json_agg(referensi) FROM referensi; ```
+
+```        
+        WITH jen AS (SELECT
+            ref.id,
+            ref.kode,
+            ref.nama
+        FROM
+            referensi ref
+            LEFT JOIN (SELECT id, kode FROM referensi) par ON
+            (ref.parent_id=par.id)
+        WHERE
+            par.kode='jenis-laporan'
+        ORDER BY
+            ref.id ASC
+        ),
+        lap AS (SELECT
+            DISTINCT(laporan.id),
+            laporan.jenis_id,
+            laporan.tujuan_id
+        FROM
+            laporan
+            LEFT JOIN laporan_tembusan ltem
+                ON (laporan.id = ltem.laporan_id)
+            LEFT JOIN (
+                SELECT id, name FROM auth_group) tem
+                ON (ltem.satuankerja_id=tem.id)
+        WHERE
+            status=1
+            
+            AND tanggal_laporan >= date_trunc('year', CURRENT_DATE)
+            
+                AND (laporan.tujuan_id=ANY(ARRAY[3]) OR tem.id=ANY(ARRAY[3]))
+            )
+        SELECT
+            jen.nama,
+            COUNT(lap.id)
+        FROM
+            jen
+            LEFT JOIN lap ON (lap.jenis_id=jen.id)
+        GROUP BY
+            jen.nama
+```
+
+```
+SELECT 
+CONCAT(neraca_penilaian_kepercayaan.nama,neraca_penilaian_kebenaran.nama) AS neraca_penilaian,COUNT(laporan.id) AS jumlah 
+FROM laporan
+LEFT JOIN neraca_penilaian_kebenaran ON laporan.neraca_kebenaran_id = neraca_penilaian_kebenaran.id
+LEFT JOIN neraca_penilaian_kepercayaan ON laporan.neraca_kepercayaan_id = neraca_penilaian_kepercayaan.id
+WHERE laporan.neraca_kebenaran_id IS NOT NULL 
+AND laporan.neraca_kepercayaan_id IS NOT NULL
+AND laporan.jenis_id = 9
+AND laporan.status = 1
+GROUP BY neraca_penilaian_kebenaran.nama,neraca_penilaian_kepercayaan.nama
+ORDER BY jumlah DESC;
+```
