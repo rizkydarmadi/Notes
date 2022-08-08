@@ -11,3 +11,6 @@
 - select id for undo, eg : `git reset --soft ec03cf6`
 - and every change will be staged
 - end
+- test
+- more test
+- teees
